@@ -1,6 +1,8 @@
 # 0003. Bind the focus toggle to ⌘⌥Space
 
-**Status:** Accepted · **Scope:** hotkey chord · **Decision:** Toggle with ⌘⌥Space (Command+Option+Space), not a bare function key.
+**Status:** Superseded by [0004](0004-rebind-to-ctrl-t.md) · **Scope:** hotkey chord · **Decision:** Toggle with ⌘⌥Space (Command+Option+Space), not a bare function key.
+
+> **Superseded by [ADR 0004](0004-rebind-to-ctrl-t.md):** in practice ⌘⌥Space collided with macOS's "Show Finder search window" shortcut (a system shortcut that only frees up after a re-login), so the toggle moved to Ctrl+T. The analysis below is preserved as the original reasoning.
 
 The chord is the whole user interface of this tool, and the "obvious" choice (F1) is actively wrong on this setup. The reasoning is non-obvious enough — it depends on what other tools in the environment already claim — to be worth recording.
 

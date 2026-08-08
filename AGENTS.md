@@ -16,7 +16,7 @@ This project runs on the [ai-engineering-template](https://github.com/dsaenztaga
 
 ## Project Overview
 
-focusd is a tiny macOS **global-hotkey daemon**: press ⌘⌥Space anywhere to toggle focus between two apps (Alacritty running Zellij, and iTerm2 running Herdr). It is deliberately built from scratch on the native macOS system APIs — a learning exercise in how global hotkeys, run loops, inter-app activation, and `launchd` daemonization actually work — rather than configuring an off-the-shelf tool. See the [README](README.md).
+focusd is a tiny macOS **global-hotkey daemon**: press Ctrl+T anywhere to toggle focus between two apps (Alacritty running Zellij, and iTerm2 running Herdr). It is deliberately built from scratch on the native macOS system APIs — a learning exercise in how global hotkeys, run loops, inter-app activation, and `launchd` daemonization actually work — rather than configuring an off-the-shelf tool. See the [README](README.md).
 
 ## Tech Stack
 
@@ -47,7 +47,7 @@ Key files:
 - `Makefile` — build / install / reload / uninstall / logs.
 - `docs/architecture/global-hotkey-daemon.md` — how-it-works explainer.
 
-For the two non-obvious decisions, read the ADRs before changing that area: [0002](docs/architecture/decisions/0002-carbon-hotkey-over-cgeventtap.md) (Carbon vs. `CGEventTap`, the permission model) and [0003](docs/architecture/decisions/0003-cmd-opt-space-keybinding.md) (why ⌘⌥Space).
+For the two non-obvious decisions, read the ADRs before changing that area: [0002](docs/architecture/decisions/0002-carbon-hotkey-over-cgeventtap.md) (Carbon vs. `CGEventTap`, the permission model) and [0004](docs/architecture/decisions/0004-rebind-to-ctrl-t.md) (why Ctrl+T — supersedes [0003](docs/architecture/decisions/0003-cmd-opt-space-keybinding.md)'s ⌘⌥Space).
 
 ## Documentation Conventions
 
@@ -82,7 +82,7 @@ A test that stubs the very thing it is checking proves the stub, not the app. De
 
 ### Verify the runtime surface
 
-This daemon's behaviour *is* its runtime surface — a green build proves nothing about whether the hotkey fires. Before considering a change done, **drive it and observe**: `make run`, press ⌘⌥Space (or synthesize it with `osascript -e 'tell application "System Events" to key code 49 using {command down, option down}'`), and confirm a `toggle:` line in the log and the focus actually switching. Passing compilation is necessary, not sufficient.
+This daemon's behaviour *is* its runtime surface — a green build proves nothing about whether the hotkey fires. Before considering a change done, **drive it and observe**: `make run`, press Ctrl+T (or synthesize it with `osascript -e 'tell application "System Events" to key code 17 using {control down}'`), and confirm a `toggle:` line in the log and the focus actually switching. Passing compilation is necessary, not sufficient.
 
 ## CI / gate
 

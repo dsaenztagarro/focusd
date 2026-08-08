@@ -1,6 +1,6 @@
 # The global-hotkey daemon
 
-*How focusd actually works today.* Complementary to [ADR 0002](decisions/0002-carbon-hotkey-over-cgeventtap.md) (why Carbon, not an event tap) and [ADR 0003](decisions/0003-cmd-opt-space-keybinding.md) (why ⌘⌥Space); this records *how* the running program behaves so the mental model can be rebuilt without reading all the code.
+*How focusd actually works today.* Complementary to [ADR 0002](decisions/0002-carbon-hotkey-over-cgeventtap.md) (why Carbon, not an event tap) and [ADR 0004](decisions/0004-rebind-to-ctrl-t.md) (why Ctrl+T); this records *how* the running program behaves so the mental model can be rebuilt without reading all the code.
 
 ## The mental model
 
@@ -16,11 +16,11 @@ Everything lives in one file, `Sources/focusd/main.swift`, under ~90 lines.
         v
   focusd process
    1. installHotKey():
-        RegisterEventHotKey(Cmd+Opt+Space) --> registers chord with WindowServer
+        RegisterEventHotKey(Ctrl+T)        --> registers chord with WindowServer
         InstallEventHandler(...)           --> our C callback for kEventHotKeyPressed
    2. NSApplication.run() (.accessory)     --> run loop; no Dock icon
         |
-        |   ⌘⌥Space pressed anywhere
+        |   Ctrl+T pressed anywhere
         v
    3. handler -> toggleFocus()
         front = NSWorkspace.frontmostApplication.bundleIdentifier
@@ -32,7 +32,7 @@ Everything lives in one file, `Sources/focusd/main.swift`, under ~90 lines.
 
 Walking the pieces:
 
-- **`installHotKey()`** — builds an `EventHotKeyID`, registers ⌘⌥Space (`kVK_Space` + `cmdKey|optionKey`) against `GetApplicationEventTarget()`, and installs a `kEventClassKeyboard` / `kEventHotKeyPressed` handler. The handler is a `@convention(c)` callback, so it captures no Swift state and simply calls the top-level `toggleFocus()`.
+- **`installHotKey()`** — builds an `EventHotKeyID`, registers Ctrl+T (`kVK_ANSI_T` + `controlKey`) against `GetApplicationEventTarget()`, and installs a `kEventClassKeyboard` / `kEventHotKeyPressed` handler. The handler is a `@convention(c)` callback, so it captures no Swift state and simply calls the top-level `toggleFocus()`.
 - **The run loop** — `NSApplication.shared.run()` with `setActivationPolicy(.accessory)`. The run loop is what lets the WindowServer deliver the hotkey event; `.accessory` keeps focusd out of the Dock and app switcher. focusd never activates *itself*.
 - **`toggleFocus()`** — reads the frontmost app's bundle id and picks the other of the two. From a third app (a browser, say) it lands on `appA`.
 - **`focus(bundleID:)`** — resolves the app URL and calls `NSWorkspace.openApplication(at:configuration:)` with `activates = true`. This one call both launches the app if it isn't running and activates it if it is. No Accessibility permission is involved at any step.
@@ -43,7 +43,7 @@ Packaging: `make install` compiles a release binary to `~/.local/bin/focusd`, re
 
 ## Failure modes
 
-- **`RegisterEventHotKey` returns non-`noErr`** → another process or an *enabled* system shortcut already owns the chord. focusd logs the `OSStatus` and keeps running (but the hotkey won't fire). On this environment the contending shortcut (Finder search, id 65) is disabled by `macos_defaults.sh`; elsewhere it may need disabling. See [ADR 0003](decisions/0003-cmd-opt-space-keybinding.md).
+- **`RegisterEventHotKey` returns non-`noErr`** → another process or a system shortcut already owns the chord. focusd logs the `OSStatus` and keeps running (but the hotkey won't fire). Ctrl+T has no macOS system shortcut, so this would mean another running app grabbed it; rebind the two constants in `main.swift`. (The predecessor chord ⌘⌥Space *did* collide with a system shortcut — see [ADR 0004](decisions/0004-rebind-to-ctrl-t.md).)
 - **Target app not installed** → `urlForApplication` returns nil; `focus()` logs `app not installed` and does nothing.
 - **Daemon crashes/exits** → `KeepAlive` in the LaunchAgent relaunches it.
 - **It's a LaunchDaemon by mistake** → a system-context daemon has no WindowServer session, so the hotkey and activation silently do nothing. focusd must be a per-user **LaunchAgent** (it is).
@@ -51,5 +51,5 @@ Packaging: `make install` compiles a release binary to `~/.local/bin/focusd`, re
 ## See also
 
 - [ADR 0002](decisions/0002-carbon-hotkey-over-cgeventtap.md) — Carbon vs. `CGEventTap` and the permission story.
-- [ADR 0003](decisions/0003-cmd-opt-space-keybinding.md) — the ⌘⌥Space choice.
+- [ADR 0004](decisions/0004-rebind-to-ctrl-t.md) — the Ctrl+T choice (supersedes [0003](decisions/0003-cmd-opt-space-keybinding.md)'s ⌘⌥Space).
 - `README.md` — install/build/learning walkthrough.

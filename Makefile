@@ -31,7 +31,7 @@ install: build
 	@touch $(LOG)
 	launchctl unload $(PLIST_DST) 2>/dev/null || true
 	launchctl load $(PLIST_DST)
-	@echo "Installed and loaded $(LABEL). Press Cmd+Opt+Space to toggle."
+	@echo "Installed and loaded $(LABEL). Press Ctrl+T to toggle."
 
 reload: install
 

@@ -30,4 +30,5 @@ ADRs record **decisions and their rationale.** They do not replace **how-to guid
 |-----|-------|--------|
 | [0001](0001-record-decisions-as-adrs.md) | Record architecture decisions as ADRs | Accepted |
 | [0002](0002-carbon-hotkey-over-cgeventtap.md) | Capture the hotkey with Carbon `RegisterEventHotKey`, not a `CGEventTap` | Accepted |
-| [0003](0003-cmd-opt-space-keybinding.md) | Bind the focus toggle to ⌘⌥Space | Accepted |
+| [0003](0003-cmd-opt-space-keybinding.md) | Bind the focus toggle to ⌘⌥Space | Superseded by [0004](0004-rebind-to-ctrl-t.md) |
+| [0004](0004-rebind-to-ctrl-t.md) | Rebind the focus toggle to Ctrl+T | Accepted |

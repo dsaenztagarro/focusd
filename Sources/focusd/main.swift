@@ -21,12 +21,19 @@ import Carbon.HIToolbox
 private let appA = "org.alacritty"          // Alacritty (running Zellij)
 private let appB = "com.googlecode.iterm2"  // iTerm2 (running Herdr)
 
-/// The global hotkey: ⌘⌥Space (Command + Option + Space).
-/// `kVK_Space` (49) is a virtual key code; the modifier mask uses Carbon's
-/// `cmdKey`/`optionKey` bits (this is *not* the same encoding as NSEvent flags).
+/// The global hotkey: Ctrl+T.
+/// `kVK_ANSI_T` (17) is a virtual key code; the modifier mask uses Carbon's
+/// `controlKey` bit (this is *not* the same encoding as NSEvent flags).
+///
+/// Unlike a ⌘-based chord (which a terminal emulator eats for its own menus and
+/// so never reaches the TUI), Ctrl+T flows into the terminal — and because a
+/// registered hotkey is *consumed*, focusd takes Ctrl+T globally, including
+/// inside the shell/nvim/Zellij. That's an accepted trade-off here: Ctrl+T has
+/// no macOS system shortcut (so no Finder-search race, unlike the old ⌘⌥Space),
+/// and nothing in this environment binds it. See ADR 0004.
 /// To rebind, change these two constants and rebuild — nothing else depends on them.
-private let hotKeyCode = UInt32(kVK_Space)
-private let hotKeyModifiers = UInt32(cmdKey | optionKey)
+private let hotKeyCode = UInt32(kVK_ANSI_T)
+private let hotKeyModifiers = UInt32(controlKey)
 
 // MARK: - Logging
 
@@ -60,7 +67,7 @@ private func focus(bundleID: String) {
 }
 
 /// The toggle: if A is frontmost, go to B; from B — or from any third app —
-/// go to A. That makes ⌘⌥Space a true back-and-forth flip between the two
+/// go to A. That makes Ctrl+T a true back-and-forth flip between the two
 /// terminals, with A as the default landing spot from elsewhere.
 private func toggleFocus() {
     let frontID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
@@ -100,7 +107,7 @@ private func installHotKey() {
     let status = RegisterEventHotKey(hotKeyCode, hotKeyModifiers, hotKeyID,
                                      GetApplicationEventTarget(), 0, &hotKeyRef)
     if status == noErr {
-        log("registered hotkey Cmd+Opt+Space (keycode \(hotKeyCode), mods \(hotKeyModifiers))")
+        log("registered hotkey Ctrl+T (keycode \(hotKeyCode), mods \(hotKeyModifiers))")
     } else {
         // Most likely another process/system shortcut already owns this chord.
         log("RegisterEventHotKey failed with OSStatus \(status)")
