@@ -95,7 +95,17 @@ Change them and `make reload`. To toggle two different apps, swap the bundle IDs
 
 ## Troubleshooting
 
-- **Nothing happens on ⌘⌥Space.** Check the log (`make logs`). If you see `RegisterEventHotKey failed`, another app or an enabled macOS shortcut owns the chord — most likely the "Finder search window" shortcut (System Settings → Keyboard → Keyboard Shortcuts). Disable it, or rebind (above). If you see `registered hotkey` but no `toggle:` lines, the chord is being intercepted upstream.
+- **⌘⌥Space opens Finder / bounces you to the Desktop** (even though `make logs` shows the `toggle:` firing). macOS's built-in **"Show Finder search window"** shortcut is *also* ⌘⌥Space, and the system-level shortcut races focusd — the Finder-search wins often enough that you land on Finder. The catch: disabling it via `defaults`/System Settings only takes effect after the **next login**, so a machine that hasn't re-logged-in still has it live. Confirm it's the culprit by unloading focusd (`make uninstall`) and pressing ⌘⌥Space — if Finder still opens, it's macOS, not focusd. Fix it one of these ways:
+  - **System Settings** → Keyboard → Keyboard Shortcuts → **Spotlight** → uncheck *"Show Finder search window."* Applies immediately, no re-login.
+  - **CLI, applied live** (writes the full-form disable and reloads settings):
+    ```bash
+    defaults write com.apple.symbolichotkeys AppleSymbolicHotKeys -dict-add 65 \
+      '{ enabled = 0; value = { parameters = ( 32, 49, 1572864 ); type = standard; }; }'
+    /System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u
+    ```
+  - **Log out and back in** if you'd rather just re-read the setting you already have on disk.
+  - Or sidestep the whole Space cluster and **rebind** to a chord macOS never claims (e.g. ⌘⌥Return) — see [ADR 0003](docs/architecture/decisions/0003-cmd-opt-space-keybinding.md).
+- **Nothing happens at all on ⌘⌥Space.** Check the log (`make logs`). `RegisterEventHotKey failed` means another app owns the chord; `registered hotkey` with no `toggle:` lines means it's intercepted upstream. Rebind (above) or free the chord.
 - **It toggles but the app doesn't come forward.** Confirm the bundle IDs with `osascript -e 'id of app "Alacritty"'`.
 - **Doesn't start at login.** `launchctl list | grep local.focusd` should show it; re-run `make install`.
 
