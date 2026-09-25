@@ -6,9 +6,9 @@ argument-hint: "[short description of the improvement]"
 
 # Propose a template improvement upstream
 
-This skill closes a feedback loop: when working on a project that adopted the **ai-engineering-template**, you will occasionally discover a way the *workflow itself* could be better — a rule that should exist in `AGENTS.md`, a skill step that misfires, a docs folder whose purpose blurs, a principle worth stating. Those improvements are worthless if they die in one project's chat. This skill routes them back to the canonical template so **every** adopter benefits.
+This skill closes a feedback loop: when working on a project that adopted the **agentic-engineering-template**, you will occasionally discover a way the *workflow itself* could be better — a rule that should exist in `AGENTS.md`, a skill step that misfires, a docs folder whose purpose blurs, a principle worth stating. Those improvements are worthless if they die in one project's chat. This skill routes them back to the canonical template so **every** adopter benefits.
 
-**Upstream target:** `dsaenztagarro/ai-engineering-template` (the canonical template). If this repo is a fork of the template or you maintain your own canonical copy, confirm the correct upstream slug with the user before creating anything.
+**Upstream target:** `dsaenztagarro/agentic-engineering-template` (the canonical template). If this repo is a fork of the template or you maintain your own canonical copy, confirm the correct upstream slug with the user before creating anything.
 
 ## When to use it — and when NOT to
 
@@ -51,7 +51,7 @@ README.md                                  # the template's own overview
 Before proposing, check the upstream repo so you don't file a duplicate:
 
 ```bash
-gh issue list --repo dsaenztagarro/ai-engineering-template --search "<keywords>" --state all
+gh issue list --repo dsaenztagarro/agentic-engineering-template --search "<keywords>" --state all
 ```
 
 If a matching issue exists, add a comment to it (with the user's OK) instead of opening a new one.
@@ -70,7 +70,7 @@ Then ask whether to open the issue upstream.
 ## 5. On the user's OK, open the issue
 
 ```bash
-gh issue create --repo dsaenztagarro/ai-engineering-template \
+gh issue create --repo dsaenztagarro/agentic-engineering-template \
   --title "<concise improvement title>" \
   --body "$(cat <<'EOF'
 ## Problem

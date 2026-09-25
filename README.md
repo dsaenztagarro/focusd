@@ -129,7 +129,7 @@ Change them and `make reload`. To toggle two different apps, swap the bundle IDs
 
 ## Credits
 
-Scaffolded on the [ai-engineering-template](https://github.com/dsaenztagarro/ai-engineering-template) — the docs taxonomy, ADR practice, and the `template-feedback` / `epic` skills come from there.
+Scaffolded on the [agentic-engineering-template](https://github.com/dsaenztagarro/agentic-engineering-template) — the docs taxonomy, ADR practice, and the `template-feedback` / `epic` skills come from there.
 
 ## License
 
