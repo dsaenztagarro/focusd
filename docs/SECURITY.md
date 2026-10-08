@@ -10,7 +10,7 @@ focusd has **no secrets**. It stores nothing, reads no credentials, opens no net
 
 The relevant "security" surface for a hotkey daemon is the macOS **privacy/permission** model, and focusd is deliberately minimal there:
 
-- **No Accessibility / Input-Monitoring grant.** focusd registers one chord with the WindowServer via Carbon `RegisterEventHotKey` and never observes the keyboard stream, so it needs no TCC permission. A `CGEventTap` would have required one — this is a conscious choice ([ADR 0002](architecture/decisions/0002-carbon-hotkey-over-cgeventtap.md)).
+- **No Accessibility / Input-Monitoring grant.** focusd registers one chord with the WindowServer via Carbon `RegisterEventHotKey` and never observes the keyboard stream, so it needs no TCC permission. A `CGEventTap` would have required one — this is a conscious choice ([hotkeys record](adr/hotkeys.md)).
 - **No elevated privileges.** It runs as a per-user **LaunchAgent** in the GUI session, never as root or a system LaunchDaemon.
 - **App activation only.** Its only side effect on the system is bringing an installed app to the foreground via `NSWorkspace` — an unprivileged operation.
 
@@ -18,7 +18,7 @@ The relevant "security" surface for a hotkey daemon is the macOS **privacy/permi
 
 - **Never commit secrets.** (There are none today; keep it that way — no keys in code or committed config.)
 - **Local settings are git-ignored.** `.claude/settings.local.json` and any local env files are never committed (see `.gitignore`).
-- **Keep the permission footprint at zero.** If a future change reaches for a `CGEventTap` or any capability needing a TCC grant, record the trade-off in a new ADR first.
+- **Keep the permission footprint at zero.** If a future change reaches for a `CGEventTap` or any capability needing a TCC grant, amend the [hotkeys record](adr/hotkeys.md) with the trade-off first.
 
 ## Reporting
 

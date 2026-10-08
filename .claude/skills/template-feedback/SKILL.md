@@ -18,7 +18,7 @@ Use it **only for generalizable, project-agnostic** improvements to the agentic 
 |---|---|
 | A missing/weak rule in `AGENTS.md`'s portable sections | A project-specific rule → edit *this* repo's `AGENTS.md` |
 | A skill (`epic`, this one, …) whose steps could be clearer/safer | A bug in this project's code or tests |
-| A docs-taxonomy gap (ADR vs explainer vs guide vs feature) | A one-off decision → an ADR in *this* repo |
+| A docs-taxonomy gap (ADR vs explainer vs guide vs feature) | A one-off decision → this repo's theme record in `docs/adr/` |
 | A portable principle worth adding (testing, model selection, docs style) | Project content, copy, or config |
 
 The tell for "generalizable": the improvement is phrased without naming this project, its language, or its framework. If you cannot state it project-agnostically, it belongs in this repo's `AGENTS.md`, not upstream — apply it there and stop.
@@ -32,7 +32,7 @@ The tell for "generalizable": the improvement is phrased without naming this pro
 
 ## 1. Confirm it's generalizable
 
-Restate the improvement in one project-agnostic sentence. If you can't (it names this project/language/framework), it's local: apply it to this repo's `AGENTS.md` or an ADR and **stop** — do not take it upstream.
+Restate the improvement in one project-agnostic sentence. If you can't (it names this project/language/framework), it's local: apply it to this repo's `AGENTS.md` or a theme record in `docs/adr/` and **stop** — do not take it upstream.
 
 ## 2. Locate the artifact it touches
 

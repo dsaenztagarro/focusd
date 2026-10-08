@@ -9,7 +9,7 @@
 // chord with the WindowServer, which delivers it to us as a high-level event.
 // It needs **no Accessibility / Input-Monitoring grant** — unlike an event tap,
 // which sees the whole keyboard stream and therefore requires that privilege.
-// See docs/architecture/decisions/0002-*.md for the full trade-off.
+// See docs/adr/hotkeys.md for the full trade-off.
 
 import AppKit
 import Carbon.HIToolbox
@@ -30,7 +30,7 @@ private let appB = "com.googlecode.iterm2"  // iTerm2 (running Herdr)
 /// registered hotkey is *consumed*, focusd takes Ctrl+T globally, including
 /// inside the shell/nvim/Zellij. That's an accepted trade-off here: Ctrl+T has
 /// no macOS system shortcut (so no Finder-search race, unlike the old ⌘⌥Space),
-/// and nothing in this environment binds it. See ADR 0004.
+/// and nothing in this environment binds it. See docs/adr/hotkeys.md.
 /// To rebind, change these two constants and rebuild — nothing else depends on them.
 private let hotKeyCode = UInt32(kVK_ANSI_T)
 private let hotKeyModifiers = UInt32(controlKey)
