@@ -2,7 +2,7 @@
 
 A tiny macOS **global-hotkey daemon**, written from scratch in Swift. Press **Ctrl+T** anywhere to toggle focus between two apps — here, **Alacritty** (running Zellij) and **iTerm2** (running Herdr).
 
-It exists as much to *learn the native macOS stack* as to switch windows: it's ~90 lines that touch global hotkeys, run loops, inter-app activation, `launchd` daemonization, and the macOS permission model — deliberately built from scratch instead of configuring [skhd](https://github.com/koekeishiya/skhd) or [Hammerspoon](https://www.hammerspoon.org/).
+It exists as much to *learn the native macOS stack* as to switch windows: it's a small Swift program that touches global hotkeys, run loops, inter-app activation, `launchd` daemonization, and the macOS permission model — deliberately built from scratch instead of configuring [skhd](https://github.com/koekeishiya/skhd) or [Hammerspoon](https://www.hammerspoon.org/).
 
 ```
    Ctrl+T  ──────────────▶  focusd  ─────────────▶  the other terminal comes forward
@@ -42,7 +42,7 @@ This is the interesting part — the concepts generalize far beyond one hotkey:
 
 ## How it works
 
-Everything is in `Sources/focusd/main.swift`:
+Everything is in `Sources/focusd/`: the rules in `Bindings.swift`, the plumbing in `main.swift`.
 
 ```
   launchd (LaunchAgent, GUI session)
@@ -83,13 +83,13 @@ A global hotkey is *consumed* before the focused app sees it, so the chord must 
 
 ## Configuring
 
-Both the apps and the chord are constants at the top of `Sources/focusd/main.swift`:
+Both the apps and the chord are constants in `Sources/focusd/Bindings.swift`:
 
 ```swift
-private let appA = "org.alacritty"          // resolve with: osascript -e 'id of app "AppName"'
-private let appB = "com.googlecode.iterm2"
-private let hotKeyCode = UInt32(kVK_ANSI_T)         // virtual key code
-private let hotKeyModifiers = UInt32(controlKey)
+let appA = "org.alacritty"          // resolve with: osascript -e 'id of app "AppName"'
+let appB = "com.googlecode.iterm2"
+let hotKeyCode = UInt32(kVK_ANSI_T)         // virtual key code
+let hotKeyModifiers = UInt32(controlKey)
 ```
 
 Change them and `make reload`. To toggle two different apps, swap the bundle IDs; to rebind, change the key code / modifier mask.
@@ -115,9 +115,11 @@ Change them and `make reload`. To toggle two different apps, swap the bundle IDs
 
 ```
 .
-├── Sources/focusd/main.swift     # the whole daemon
+├── Sources/focusd/Bindings.swift # the rules: apps, keys, where a press lands
+├── Sources/focusd/main.swift     # Carbon + AppKit plumbing, entry point
+├── Tests/focusdTests/            # Swift Testing suite (make test)
 ├── Package.swift                 # SwiftPM executable, macOS 14+
-├── Makefile                      # build / install / reload / uninstall / logs
+├── Makefile                      # build / test / install / reload / uninstall / logs
 ├── launchd/local.focusd.plist    # LaunchAgent template
 ├── AGENTS.md · CLAUDE.md         # AI-agent instructions (single source of truth)
 └── docs/

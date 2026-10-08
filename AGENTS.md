@@ -30,7 +30,7 @@ focusd is a tiny macOS **global-hotkey daemon**: press Ctrl+T anywhere to toggle
 
 ```bash
 # build:   swift build -c release
-# test:    swift build -c release   (no unit suite; verification is runtime — see below)
+# test:    make test             # Swift Testing suite (Tests/focusdTests)
 # lint:    swift build -c release -Xswiftc -warnings-as-errors
 # run:     make run          # foreground, Ctrl-C to stop (prints the log to the terminal)
 # install: make install      # build + install LaunchAgent + load it
@@ -39,10 +39,12 @@ focusd is a tiny macOS **global-hotkey daemon**: press Ctrl+T anywhere to toggle
 
 ## Architecture
 
-One Swift file (`Sources/focusd/main.swift`, ~90 lines) registers a Carbon hotkey, runs an `NSApplication` loop in `.accessory` policy, and on each press activates the app that isn't frontmost. The WindowServer does the key matching and hands the process a single high-level event, so no keyboard-monitoring permission is needed.
+Two small Swift files: `Bindings.swift` holds the pure rules, and `main.swift` registers a Carbon hotkey, runs an `NSApplication` loop in `.accessory` policy, and on each press activates the app that isn't frontmost. The WindowServer does the key matching and hands the process a single high-level event, so no keyboard-monitoring permission is needed.
 
 Key files:
-- `Sources/focusd/main.swift` — the whole daemon: config constants, focus logic, Carbon plumbing, entry point.
+- `Sources/focusd/Bindings.swift` — the pure rules: app and key constants, where a press lands.
+- `Sources/focusd/main.swift` — focusing an app, the Carbon plumbing, the entry point.
+- `Tests/focusdTests/` — the Swift Testing suite, named for the rules.
 - `launchd/local.focusd.plist` — LaunchAgent template (`__BIN__`/`__LOG__` filled by `make install`).
 - `Makefile` — build / install / reload / uninstall / logs.
 - `docs/adr/` — decision records, one per theme.
@@ -84,13 +86,13 @@ This daemon's behaviour *is* its runtime surface — a green build proves nothin
 
 ## CI / gate
 
-Before a change ships, the build must be clean with warnings treated as errors:
+Before a change ships, the build must be clean with warnings treated as errors and the tests green:
 
 ```bash
-swift build -c release -Xswiftc -warnings-as-errors
+swift build -c release -Xswiftc -warnings-as-errors && make test
 ```
 
-and the runtime surface must be driven (above). There is no separate unit-test suite; if one is added, it joins this gate. The `/epic` skill defers to this gate.
+and the runtime surface must be driven (above). The suite states the pure rules in `Sources/focusd/Bindings.swift` (where a press lands); the Carbon and `NSWorkspace` wiring in `main.swift` is proven only by driving it. The `/epic` skill defers to this gate.
 
 ## Development Workflow
 
