@@ -1,7 +1,7 @@
 ---
 name: epic
-description: Turn a design doc into a GitHub epic — decompose the design into self-contained sub-issues with a phased plan, then implement them one ticket at a time (branch → tests → PR → squash-merge), carrying every pragmatic decision forward on the epic issue so later tickets inherit the context. The design doc is a UI design (a Claude Design canvas under `docs/designs/*.html`) or a backend/architecture design authored as markdown (`docs/architecture/*.md` or `docs/features/*.md`). User-invoked only; the user reviews the work at the very end. Run `/epic <design-path>` to start, or `/epic resume #<epic>` to continue.
-argument-hint: "<docs/designs/*.html | docs/architecture/*.md | docs/features/*.md> | resume #<epic>"
+description: Turn a design doc into a GitHub epic — decompose the design into self-contained sub-issues with a phased plan, then implement them one ticket at a time (branch → tests → PR → squash-merge), carrying every pragmatic decision forward on the epic issue so later tickets inherit the context. The design doc is a UI design (a Claude Design canvas under `docs/designs/*.html`) or a backend/architecture design authored as markdown outside `docs/`, deleted at close-out. User-invoked only; the user reviews the work at the very end. Run `/epic <design-path>` to start, or `/epic resume #<epic>` to continue.
+argument-hint: "<docs/designs/*.html | <design>.md> | resume #<epic>"
 ---
 
 # Run an epic from a design doc
@@ -24,7 +24,7 @@ decomposes:
 | Kind | Lives in | Authored by | Decomposes by |
 |------|----------|-------------|---------------|
 | **UI / visual** | `docs/designs/*.html` | **Claude Design** (from a design brief) | the doc's sections/anchors; each interactive workflow becomes a spec'd ticket |
-| **Backend / architecture** | `docs/architecture/*.md` (a cross-cutting contract) or `docs/features/*.md` (a feature's design) | authored directly as markdown from an approved plan/ADR | its own section headings and phase ordering; each layer that can merge green becomes a ticket |
+| **Backend / architecture** | a markdown file outside `docs/` — an input, deleted at close-out once its durable half has landed in tests, a theme record or an issue | authored directly as markdown from an approved plan | its own section headings and phase ordering; each layer that can merge green becomes a ticket |
 
 For a backend design there are no visual workflows — "design fidelity" means the contracts the
 doc specifies, verified by unit/integration tests rather than UI tests. When a section can't merge
@@ -40,7 +40,7 @@ two PRs.
 - **Terse terminal, rich issues.** No diff dumps, no test-log dumps, no plan narration. Emit one
   short status line per ticket. The detailed record lives in the issues and the epic.
 - **Document where it belongs.** Pragmatic ticket decision → sub-issue + epic log. Architecturally
-  meaningful decision → _also_ a numbered ADR (see step 3.5).
+  meaningful decision → _also_ an amendment to its theme record in `docs/adr/` (see step 3.5).
 - **Follow the repo's rules.** `AGENTS.md` governs implementation, testing, commits, and the
   test/lint **gate**. Read it; don't restate it here.
 - **Design fidelity is verified, not assumed.** Every workflow the design specifies must have a
@@ -152,17 +152,16 @@ contaminating whatever PR points at it. Before the first push, run
 Follow `AGENTS.md` and the established repo conventions. Reuse before you build. For a UI ticket,
 match the Claude Design canvas exactly and reference the design system (per `AGENTS.md`).
 
-### 3.5 ADR gate (architecturally meaningful decisions only)
-If this ticket made a decision that's architecturally meaningful (a data-model or interface
-contract, a cross-cutting integration choice, a security boundary — not a local code choice),
-record an ADR:
-- copy `docs/architecture/decisions/template.md` → next free `NNNN-<slug>.md`,
-- fill Context / Decision / Alternatives considered / Consequences, ASCII diagrams only,
-- add the index row to `docs/architecture/decisions/README.md`,
-- reference the sub-issue and epic in the ADR's References section.
+### 3.5 Decision-record gate (decisions that clear the bar only)
+If this ticket made a decision that clears the bar in `docs/adr/README.md` (a real fork, a
+consequence beyond the change, nothing else can hold it — not a local code choice), amend the
+theme record that owns it:
+- add or replace a `###` decision under its **Decisions**, and the rejected options someone would
+  reach for tomorrow under **Rejected**, ASCII diagrams only,
+- post one dated line on the theme's `decision-log` issue: what changed and why, linking the PR,
+- a decision that fits no theme is the maintainer's call — ask, don't open a new record silently.
 
-If the ticket built or materially changed a non-trivial mechanism, update its how-it-works
-explainer under `docs/architecture/` in the same PR (per `AGENTS.md`).
+Behaviour the ticket built is stated by its tests, never by a how-it-works document.
 
 ### 3.6 Test gate
 The project's **test + lint gate** (as defined in `AGENTS.md`) must pass. Fix failures before going
@@ -196,7 +195,7 @@ When every ticket is shipped or consciously skipped:
    note listing the skipped tickets and what would unblock them.
 3. If deployment is a separate, human-gated step in this project, **do not deploy** — print the
    handoff so the user can deploy.
-4. Print a brief final summary: tickets shipped, tickets skipped + why, ADRs created, the headline
+4. Print a brief final summary: tickets shipped, tickets skipped + why, theme records amended, the headline
    pragmatic decisions, and the release version.
 
 ## Epic body template
@@ -228,8 +227,8 @@ When every ticket is shipped or consciously skipped:
 
 - The **approval gate in step 1.7 is the only mid-run pause.** Everything after runs to completion
   without asking — the user reviews the finished work at the end.
-- The Decisions Log is **append-only.** Don't rewrite earlier entries. An accepted ADR is likewise
-  immutable — supersede with a new ADR, never edit in place.
+- The Decisions Log is **append-only.** Don't rewrite earlier entries. A theme record is the
+  opposite — amended in place, with the change logged on its `decision-log` issue.
 - Resume safety: a ticket is "done" only when its box is checked and its PR is merged — read the
   epic's checklist state, not local git.
 - Keep the design-doc link relative so it resolves in the repo; link the specific section anchor

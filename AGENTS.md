@@ -45,21 +45,19 @@ Key files:
 - `Sources/focusd/main.swift` — the whole daemon: config constants, focus logic, Carbon plumbing, entry point.
 - `launchd/local.focusd.plist` — LaunchAgent template (`__BIN__`/`__LOG__` filled by `make install`).
 - `Makefile` — build / install / reload / uninstall / logs.
-- `docs/architecture/global-hotkey-daemon.md` — how-it-works explainer.
+- `docs/adr/` — decision records, one per theme.
 
-For the two non-obvious decisions, read the ADRs before changing that area: [0002](docs/architecture/decisions/0002-carbon-hotkey-over-cgeventtap.md) (Carbon vs. `CGEventTap`, the permission model) and [0004](docs/architecture/decisions/0004-rebind-to-ctrl-t.md) (why Ctrl+T — supersedes [0003](docs/architecture/decisions/0003-cmd-opt-space-keybinding.md)'s ⌘⌥Space).
+Before changing how a key is captured, which keys are bound, or what a press does, read [`docs/adr/hotkeys.md`](docs/adr/hotkeys.md): it holds the permission boundary (Carbon vs. `CGEventTap`) and why each chord won or lost.
 
 ## Documentation Conventions
 
-- **Architecture Decision Records** live in `docs/architecture/decisions/` — one decision per file, numbered, **immutable once accepted** (a changed decision is a new ADR that supersedes the old). Follow [`docs/architecture/decisions/template.md`](docs/architecture/decisions/template.md); the [README](docs/architecture/decisions/README.md) states the conventions. Record a decision that's architecturally meaningful (the event-capture mechanism, the permission boundary, the keybinding rationale) as an ADR — not local code choices.
-- **How-to guides** live in `docs/guides/`; **feature docs** in `docs/features/`; **how-it-works explainers** in `docs/architecture/*.md`. Keep them distinct: an ADR is *why we chose X*, an explainer is *how it works today*, a guide is *how you do X*.
+Each fact has one owner ([`docs/adr/decision-records.md`](docs/adr/decision-records.md)):
+
+- **Behaviour** is stated by tests named for the rules they hold.
+- **Why** it is built this way is a themed record in [`docs/adr/`](docs/adr/README.md). A decision **amends the record that owns its theme** and adds one dated line to the theme's `decision-log` issue; it never opens a numbered sibling. A decision that fits no theme is a new theme, and that is the maintainer's call.
+- **Commands** are a line in the README; a multi-step procedure is a skill; **open work** is an issue.
+- Durable prose never describes what the code currently does — no explainers, no per-feature or per-guide pages. `.claude/rules/durable-docs.md` states the genres.
 - **Markdown prose is one line per paragraph** (or semantic line breaks), never fixed-column hard wraps.
-
-## Preserve Architectural Understanding
-
-For any non-trivial mechanism — how the hotkey is delivered, the run-loop/activation dance, a cross-cutting convention that isn't obvious from any single file — keep a *how-it-works* explainer under `docs/architecture/` (a plain `*.md`). This is **complementary to ADRs, not a substitute**: the ADR records *why*; the explainer records *how it actually works today* so a maintainer (or a future agent) can rebuild the mental model without reverse-engineering the code.
-
-- **When you build or materially change such a mechanism, write or update its explainer as part of the same work** — don't wait to be asked, and cross-link the explainer and its ADR both ways. Use [`docs/architecture/EXPLAINER-TEMPLATE.md`](docs/architecture/EXPLAINER-TEMPLATE.md). The current explainer is [`docs/architecture/global-hotkey-daemon.md`](docs/architecture/global-hotkey-daemon.md).
 
 ## Documentation Style
 
@@ -101,7 +99,7 @@ For any new feature or significant change:
 1. **Create a GitHub issue** documenting the change (summary, acceptance criteria, technical notes).
 2. **Create a feature branch** named after the issue: `git checkout -b <issue>-<slug>`.
 3. **Implement & test** — run the gate frequently; drive the runtime surface (press/synthesize the hotkey).
-4. **Record decisions** — architecturally meaningful decision → an ADR; new/changed mechanism → its explainer.
+4. **Record decisions** — a decision that clears the bar in [`docs/adr/README.md`](docs/adr/README.md) amends its theme record, plus one dated line on the theme's `decision-log` issue.
 5. **Open a PR** with `gh pr create`, body ending `Closes #<issue>`; merge with `gh pr merge --squash` once the gate is green.
 
 For larger, multi-ticket work, drive it with the **`/epic`** skill (`.claude/skills/epic/`): one design doc → a GitHub epic → phased sub-issues → shipped, one ticket at a time.
