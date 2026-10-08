@@ -1,6 +1,7 @@
 # focusd — build, install as a LaunchAgent, and manage the running daemon.
 #
 #   make build      compile the release binary
+#   make test       run the Swift Testing suite
 #   make install    build, install the binary + LaunchAgent, and (re)load it
 #   make reload      alias for install (rebuild + relaunch after code changes)
 #   make logs        tail the daemon log
@@ -18,10 +19,18 @@ PLIST_SRC := launchd/$(LABEL).plist
 PLIST_DST := $(HOME)/Library/LaunchAgents/$(LABEL).plist
 LOG       := $(HOME)/Library/Logs/$(LABEL).log
 
-.PHONY: build install reload uninstall logs run clean
+.PHONY: build test install reload uninstall logs run clean
+
+# The Command Line Tools ship the Swift Testing macro plugin outside the
+# compiler's default plugin search path; point at it from the active toolchain.
+TESTING_PLUGINS := $(abspath $(dir $(shell xcrun --find swift))../lib/swift/host/plugins/testing)
+TEST_FLAGS      := $(if $(wildcard $(TESTING_PLUGINS)),-Xswiftc -plugin-path -Xswiftc $(TESTING_PLUGINS))
 
 build:
 	swift build -c release
+
+test:
+	swift test $(TEST_FLAGS)
 
 install: build
 	@mkdir -p $(BINDIR) $(HOME)/Library/LaunchAgents
