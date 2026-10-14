@@ -1,18 +1,22 @@
 # focusd
 
-A tiny macOS **global-hotkey daemon**, written from scratch in Swift. Press **Ctrl+T** anywhere to toggle focus between two apps — here, **Alacritty** (running Zellij) and **iTerm2** (running Herdr).
+A tiny macOS **global-hotkey daemon**, written from scratch in Swift. Press **Ctrl+T** anywhere to toggle focus between two apps — here, **Alacritty** (running Zellij) and **iTerm2** (running Herdr) — or **Fn+1…Fn+5** on an HHKB to jump straight to an app.
 
 It exists as much to *learn the native macOS stack* as to switch windows: it's a small Swift program that touches global hotkeys, run loops, inter-app activation, `launchd` daemonization, and the macOS permission model — deliberately built from scratch instead of configuring [skhd](https://github.com/koekeishiya/skhd) or [Hammerspoon](https://www.hammerspoon.org/).
 
 ```
-   Ctrl+T  ──────────────▶  focusd  ─────────────▶  the other terminal comes forward
- (from anywhere)          (background agent)        Alacritty ⇄ iTerm2
+   Ctrl+T ----------+                       +--> the other terminal (Alacritty <-> iTerm2)
+                    +--> focusd (agent) ----+
+   Fn+1..Fn+5 ------+                       +--> that slot's app (iTerm2, Alacritty, browser, ...)
+ (from anywhere)
 ```
 
 ## What it does
 
-- Registers **one** global hotkey with the macOS WindowServer.
-- On press, reads which app is frontmost and **activates the other** of the two (launching it if needed).
+- Registers a handful of global hotkeys with the macOS WindowServer.
+- On **Ctrl+T**, reads which app is frontmost and **activates the other** of the two terminals.
+- On **Fn+N**, activates that slot's app; pressing the slot of the app already in front leaves it there.
+- Launches the target app if it isn't running.
 - Runs as a headless **LaunchAgent** — starts at login, no Dock icon, restarts if it dies.
 - Needs **no Accessibility / Input-Monitoring permission** (see [Why no permissions](#why-no-permissions-the-key-design-choice)).
 
@@ -22,7 +26,7 @@ It exists as much to *learn the native macOS stack* as to switch windows: it's a
 git clone https://github.com/dsaenztagarro/focusd.git
 cd focusd
 make install        # builds, installs the LaunchAgent, and loads it
-# → press Ctrl+T to flip between Alacritty and iTerm2
+# → press Ctrl+T to flip between Alacritty and iTerm2, Fn+1..Fn+5 to jump to an app
 make logs           # watch toggles as they happen
 make uninstall      # remove it
 ```
@@ -49,14 +53,15 @@ Everything is in `Sources/focusd/`: the rules in `Bindings.swift`, the plumbing 
         |  RunAtLoad / KeepAlive
         v
   focusd
-   1. RegisterEventHotKey(Ctrl+T)         --> WindowServer matches the chord
-      InstallEventHandler(kEventHotKeyPressed) --> C callback -> toggleFocus()
+   1. RegisterEventHotKey(chord, id)  x6  --> Ctrl+T as id 1, F1..F5 as ids 2..6
+      InstallEventHandler(kEventHotKeyPressed) --> C callback reads the id
    2. NSApplication.run() (.accessory)    --> run loop, no Dock icon
         |
-        |  Ctrl+T pressed anywhere
+        |  a registered chord pressed anywhere
         v
-   3. front  = NSWorkspace.frontmostApplication.bundleIdentifier
-      target = (front == Alacritty) ? iTerm2 : Alacritty
+   3. action(forHotKeyID: id)
+        toggle    -> target = (front == Alacritty) ? iTerm2 : Alacritty
+        focus(X)  -> target = X (the default browser is looked up now)
       NSWorkspace.openApplication(target, activates: true)
 ```
 
@@ -64,7 +69,7 @@ Why it is built this way, and what was rejected, is in [`docs/adr/hotkeys.md`](d
 
 ## Why no permissions (the key design choice)
 
-Most hotkey tools ask you to grant **Accessibility** in System Settings. focusd doesn't, because it never needs to *see* your keystrokes — it registers a single chord with the WindowServer and gets a "that chord fired" event back. That is the entire reason to prefer `RegisterEventHotKey` over a `CGEventTap` here: same result for one chord, none of the permission cost (which also breaks on OS upgrades and re-signing). Activating apps via `NSWorkspace` is unprivileged too. The trade-off — and what a `CGEventTap` would buy you — is written up in the [hotkeys record](docs/adr/hotkeys.md).
+Most hotkey tools ask you to grant **Accessibility** in System Settings. focusd doesn't, because it never needs to *see* your keystrokes — it registers each chord it needs with the WindowServer and gets a "that chord fired" event back. That is the entire reason to prefer `RegisterEventHotKey` over a `CGEventTap` here: same result for a handful of chords, none of the permission cost (which also breaks on OS upgrades and re-signing). Activating apps via `NSWorkspace` is unprivileged too. The trade-off — and what a `CGEventTap` would buy you — is written up in the [hotkeys record](docs/adr/hotkeys.md).
 
 ## Why Ctrl+T
 
@@ -81,18 +86,39 @@ A global hotkey is *consumed* before the focused app sees it, so the chord must 
 
 ⌘⌥Space was the original, reasoned choice — until it collided with macOS's Finder-search shortcut in practice. **Ctrl+T** ([hotkeys record](docs/adr/hotkeys.md)) trades the "⌘ never reaches a TUI" safety of a Command chord for something better here: **no macOS system shortcut at all**, so no race and no per-machine settings dependency. The cost — Ctrl+T is a non-⌘ key, so it's consumed globally *inside* terminals too — is acceptable because nothing in this environment binds it (the only casualty is vim's niche `Ctrl+T` tag-pop).
 
+## Fn-slots (HHKB)
+
+On a Happy Hacking Keyboard, `Fn` is a layer inside the keyboard's firmware: macOS never sees it, and Fn+1 arrives as a plain **F1**. So each slot is a bare F-key that `RegisterEventHotKey` can register with no modifier, and no permission.
+
+| Keys | Arrives as | Jumps to |
+|------|-----------|----------|
+| Fn+1 | F1 | iTerm2 (Herdr) |
+| Fn+2 | F2 | Alacritty (Zellij) |
+| Fn+3 | F3 | the default browser, resolved at press time |
+| Fn+4 | F4 | Outlook |
+| Fn+5 | F5 | Slack |
+
+A registered key is consumed in every app, so F1–F5 no longer reach anything else: nvim's debugger steps on `<Leader>d…` instead. Fn+6…Fn+9 stay unbound until they get an app. On an Apple keyboard, a bare F-key is a media key unless *"Use F1, F2, etc. keys as standard function keys"* is on, so the slots are meant for the HHKB.
+
 ## Configuring
 
-Both the apps and the chord are constants in `Sources/focusd/Bindings.swift`:
+The apps, the chord and the slots are constants in `Sources/focusd/Bindings.swift`:
 
 ```swift
 let appA = "org.alacritty"          // resolve with: osascript -e 'id of app "AppName"'
 let appB = "com.googlecode.iterm2"
 let hotKeyCode = UInt32(kVK_ANSI_T)         // virtual key code
 let hotKeyModifiers = UInt32(controlKey)
+
+let slots: [(keyCode: UInt32, target: Target)] = [
+    (UInt32(kVK_F1), .app(appB)),                 // Fn+1 on the HHKB
+    (UInt32(kVK_F3), .defaultBrowser),
+    (UInt32(kVK_F5), .app("com.tinyspeck.slackmacgap")),
+    // ...
+]
 ```
 
-Change them and `make reload`. To toggle two different apps, swap the bundle IDs; to rebind, change the key code / modifier mask.
+Change them and `make reload`. To toggle two different apps, swap the bundle IDs; to rebind, change the key code / modifier mask; to add a slot, append a row (`kVK_F6`…). `make test` fails if two hotkeys share a chord.
 
 ## Troubleshooting
 
@@ -106,6 +132,7 @@ Change them and `make reload`. To toggle two different apps, swap the bundle IDs
     ```
   - **Log out and back in** if you'd rather just re-read the setting you already have on disk.
   - Or just stay on the default **Ctrl+T**, which macOS never claims — see the [hotkeys record](docs/adr/hotkeys.md).
+- **Fn+N does nothing.** `make logs` should show `registered hotkey N+1 (keycode …)` at start and a `slot N:` line per press. No `slot` line means the key never arrived as an F-key: check the keyboard's mode in a key-event viewer (Fn+1 should be `f1`, keycode 122, no modifiers).
 - **Nothing happens at all on Ctrl+T.** Check the log (`make logs`). `RegisterEventHotKey failed` means another app owns the chord; `registered hotkey` with no `toggle:` lines means it's intercepted upstream. Rebind (above) or free the chord.
 - **It toggles but the app doesn't come forward.** Confirm the bundle IDs with `osascript -e 'id of app "Alacritty"'`; an `app not installed: <id>` log line means the bundle ID resolves to nothing.
 - **Loaded but the hotkey and activation silently do nothing.** It was installed as a system LaunchDaemon, which has no WindowServer session; focusd must be a per-user LaunchAgent, which is what `make install` writes.
