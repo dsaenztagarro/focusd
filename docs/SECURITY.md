@@ -4,13 +4,13 @@ How this project handles secrets, permissions, and other sensitive material.
 
 ## Secrets & credentials
 
-focusd has **no secrets**. It stores nothing, reads no credentials, opens no network connections, and takes no input beyond a single global key chord. There is no secret manager, no token, no config file with sensitive material.
+focusd has **no secrets**. It stores nothing, reads no credentials, opens no network connections, and takes no input beyond its registered global key chords. There is no secret manager, no token, no config file with sensitive material.
 
 ## Permissions & privacy posture
 
 The relevant "security" surface for a hotkey daemon is the macOS **privacy/permission** model, and focusd is deliberately minimal there:
 
-- **No Accessibility / Input-Monitoring grant.** focusd registers one chord with the WindowServer via Carbon `RegisterEventHotKey` and never observes the keyboard stream, so it needs no TCC permission. A `CGEventTap` would have required one — this is a conscious choice ([hotkeys record](adr/hotkeys.md)).
+- **No Accessibility / Input-Monitoring grant.** focusd registers a few specific chords with the WindowServer via Carbon `RegisterEventHotKey` and never observes the keyboard stream, so it needs no TCC permission. A `CGEventTap` would have required one — this is a conscious choice ([hotkeys record](adr/hotkeys.md)).
 - **No elevated privileges.** It runs as a per-user **LaunchAgent** in the GUI session, never as root or a system LaunchDaemon.
 - **App activation only.** Its only side effect on the system is bringing an installed app to the foreground via `NSWorkspace` — an unprivileged operation.
 
