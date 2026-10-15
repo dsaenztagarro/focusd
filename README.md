@@ -31,6 +31,8 @@ make logs           # watch toggles as they happen
 make uninstall      # remove it
 ```
 
+To test a pull request before merging it, run its build as the real agent with `make pr-install PR=<number>`: it checks the PR out under `.build/` and runs that checkout's own `make install`. The log's start line names the commit running. `make install` on master puts the release back, and `make pr-clean` removes the checkouts.
+
 Requires the Swift toolchain (Xcode or the Command Line Tools: `xcode-select --install`).
 
 ## What you can learn from this repo

@@ -129,13 +129,16 @@ let configURL = FileManager.default.homeDirectoryForCurrentUser
 let (bindings, configOutcome) = startupBindings {
     FileManager.default.fileExists(atPath: configURL.path) ? try Data(contentsOf: configURL) : nil
 }
+/// The commit `make` built from: tells a `make pr-install` build from the release.
+let build = ProcessInfo.processInfo.environment["FOCUSD_BUILD"] ?? "unknown build"
+
 switch configOutcome {
 case .loaded:
-    log("focusd starting with \(configURL.path)")
+    log("focusd \(build) starting with \(configURL.path)")
 case .missing:
-    log("focusd starting; no config at \(configURL.path), using the default toggle")
+    log("focusd \(build) starting; no config at \(configURL.path), using the default toggle")
 case .invalid(let reason):
-    log("focusd starting; ignoring \(configURL.path): \(reason); using the default toggle")
+    log("focusd \(build) starting; ignoring \(configURL.path): \(reason); using the default toggle")
 }
 installHotKeys()
 

@@ -35,6 +35,7 @@ focusd is a tiny macOS **global-hotkey daemon**: press Ctrl+T anywhere to toggle
 # run:     make run          # foreground, Ctrl-C to stop (prints the log to the terminal)
 # install: make install      # build + install LaunchAgent + load it
 # logs:    make logs         # tail ~/Library/Logs/local.focusd.log
+# PR:      make pr-install PR=<n>   # run a PR's build as the agent; make install on master restores
 ```
 
 ## Architecture
