@@ -56,6 +56,14 @@ A slot means "be in this app": pressing the slot of the frontmost app leaves it 
 
 Every bound key is taken from every app, so a function key is bound only once it has an app; the unassigned ones still reach the apps that use them. nvim's debugger keeps its stepping keys on a leader group in the dotfiles, off the function keys, so the slots keep the importance order from 1.
 
+### Bindings are per machine, in a JSON5 file
+
+The toggle (its chord and its two apps) and the slots come from `~/.config/focusd/config.json5`, so one binary serves machines with different apps: a work machine's file names Outlook, a personal one's does not, and each variant can live in the dotfiles. Only what a machine's file names is registered, because a registered key is taken globally.
+
+JSON5 through Foundation's `JSONDecoder.allowsJSON5` gives comments and trailing commas with no third-party dependency. The file is read once at startup and an edit takes effect on a restart; watching it would add a moving part for a file that changes a few times a year.
+
+A missing or invalid file runs the built-in default, Ctrl+T flipping the two terminals and no slots, with the reason logged. focusd never exits over its config: launchd's `KeepAlive` would restart it in a loop, and the toggle would be dead the whole time. `make install` never writes a config, since a shipped default would put one machine's apps on every other.
+
 ## Rejected
 
 - **`CGEventTap`** — could bind keys Carbon cannot, but costs the Accessibility grant for a capability not used.
@@ -65,6 +73,8 @@ Every bound key is taken from every app, so a function key is bound only once it
 - **A Hyper key (⌘⌃⌥⇧)** — the most collision-proof class, but unpressable without a Karabiner remap.
 - **Slots on a modifier chord (⌥ + F-key)** — keeps the debugger's keys, but Alt still reaches the TUI and it gives back the one-chord ergonomics the Fn layer offers.
 - **A slot that flips back when its app is frontmost** — duplicates Ctrl+T.
+- **A TOML config** — reads as well, but would be the project's first third-party dependency, for nothing JSON5's comments do not already give.
+- **A `defaults` plist domain** — native, but awkward to hand-edit and to keep per machine in the dotfiles.
 
 ## Left open
 
@@ -75,4 +85,4 @@ Every bound key is taken from every app, so a function key is bound only once it
 
 ## References
 
-Decision log: [#6](https://github.com/dsaenztagarro/focusd/issues/6) · Code: `Sources/focusd/main.swift` · Apple: Carbon Event Manager `RegisterEventHotKey`, Quartz `CGEventTapCreate`, `NSWorkspace`
+Decision log: [#6](https://github.com/dsaenztagarro/focusd/issues/6) · Code: `Sources/focusd/Bindings.swift`, `Sources/focusd/main.swift` · Apple: Carbon Event Manager `RegisterEventHotKey`, Quartz `CGEventTapCreate`, `NSWorkspace`
