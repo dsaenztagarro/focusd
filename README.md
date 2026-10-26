@@ -26,10 +26,12 @@ It exists as much to *learn the native macOS stack* as to switch windows: it's a
 git clone https://github.com/dsaenztagarro/focusd.git
 cd focusd
 make install        # builds, installs the LaunchAgent, and loads it
-# → press Ctrl+T to flip between Alacritty and iTerm2, Fn+1..Fn+5 to jump to an app
+# → press Ctrl+T to flip between Alacritty and iTerm2; add slots in the config (below)
 make logs           # watch toggles as they happen
 make uninstall      # remove it
 ```
+
+To test a pull request before merging it, run its build as the real agent with `make pr-install PR=<number>`: it checks the PR out under `.build/` and runs that checkout's own `make install`. The log's start line names the commit running. `make install` on master puts the release back, and `make pr-clean` removes the checkouts.
 
 Requires the Swift toolchain (Xcode or the Command Line Tools: `xcode-select --install`).
 
@@ -53,14 +55,15 @@ Everything is in `Sources/focusd/`: the rules in `Bindings.swift`, the plumbing 
         |  RunAtLoad / KeepAlive
         v
   focusd
-   1. RegisterEventHotKey(chord, id)  x6  --> Ctrl+T as id 1, F1..F5 as ids 2..6
+   0. read ~/.config/focusd/config.json5  --> bindings (missing/invalid: Ctrl+T only)
+   1. RegisterEventHotKey(chord, id)      --> the toggle as id 1, each slot as 2, 3, ...
       InstallEventHandler(kEventHotKeyPressed) --> C callback reads the id
    2. NSApplication.run() (.accessory)    --> run loop, no Dock icon
         |
         |  a registered chord pressed anywhere
         v
    3. action(forHotKeyID: id)
-        toggle    -> target = (front == Alacritty) ? iTerm2 : Alacritty
+        toggle    -> target = (front == apps[0]) ? apps[1] : apps[0]
         focus(X)  -> target = X (the default browser is looked up now)
       NSWorkspace.openApplication(target, activates: true)
 ```
@@ -90,6 +93,8 @@ A global hotkey is *consumed* before the focused app sees it, so the chord must 
 
 On a Happy Hacking Keyboard, `Fn` is a layer inside the keyboard's firmware: macOS never sees it, and Fn+1 arrives as a plain **F1**. So each slot is a bare F-key that `RegisterEventHotKey` can register with no modifier, and no permission.
 
+The slots are whatever the machine's [config](#configuring) names; on the work machine:
+
 | Keys | Arrives as | Jumps to |
 |------|-----------|----------|
 | Fn+1 | F1 | iTerm2 (Herdr) |
@@ -98,27 +103,33 @@ On a Happy Hacking Keyboard, `Fn` is a layer inside the keyboard's firmware: mac
 | Fn+4 | F4 | Outlook |
 | Fn+5 | F5 | Slack |
 
-A registered key is consumed in every app, so F1–F5 no longer reach anything else: nvim's debugger steps on `<Leader>d…` instead. Fn+6…Fn+9 stay unbound until they get an app. On an Apple keyboard, a bare F-key is a media key unless *"Use F1, F2, etc. keys as standard function keys"* is on, so the slots are meant for the HHKB.
+A registered key is consumed in every app, so the configured F-keys no longer reach anything else: nvim's debugger steps on `<Leader>d…` instead. A key no config names stays unbound. On an Apple keyboard, a bare F-key is a media key unless *"Use F1, F2, etc. keys as standard function keys"* is on, so the slots are meant for the HHKB.
 
 ## Configuring
 
-The apps, the chord and the slots are constants in `Sources/focusd/Bindings.swift`:
+Each machine has its own bindings in `~/.config/focusd/config.json5` (JSON5: comments and trailing commas allowed). This is the work machine's:
 
-```swift
-let appA = "org.alacritty"          // resolve with: osascript -e 'id of app "AppName"'
-let appB = "com.googlecode.iterm2"
-let hotKeyCode = UInt32(kVK_ANSI_T)         // virtual key code
-let hotKeyModifiers = UInt32(controlKey)
-
-let slots: [(keyCode: UInt32, target: Target)] = [
-    (UInt32(kVK_F1), .app(appB)),                 // Fn+1 on the HHKB
-    (UInt32(kVK_F3), .defaultBrowser),
-    (UInt32(kVK_F5), .app("com.tinyspeck.slackmacgap")),
-    // ...
-]
+```json5
+{
+  // apps[0] is where Ctrl+T lands from any third app
+  toggle: { key: "ctrl+t", apps: ["org.alacritty", "com.googlecode.iterm2"] },
+  slots: {
+    f1: "com.googlecode.iterm2",
+    f2: "org.alacritty",
+    f3: "default-browser",
+    f4: "com.microsoft.Outlook",   // work machine only
+    f5: "com.tinyspeck.slackmacgap",
+  },
+}
 ```
 
-Change them and `make reload`. To toggle two different apps, swap the bundle IDs; to rebind, change the key code / modifier mask; to add a slot, append a row (`kVK_F6`…). `make test` fails if two hotkeys share a chord.
+Edit it, then `make reload`. Resolve an app's bundle id with `osascript -e 'id of app "AppName"'`.
+
+- **Keys:** `a`–`z`, `0`–`9`, `f1`–`f12`, `space`, `return`, with `ctrl`, `alt`, `cmd`, `shift` joined by `+` (`"cmd+alt+return"`). A slot is a bare key.
+- **No file:** Ctrl+T flips Alacritty and iTerm2, and there are no slots. A file with no `toggle` keeps that toggle.
+- **A broken file** (bad JSON5, an unknown key, one key bound twice, a toggle without exactly two apps) is ignored with the reason in `make logs`, and focusd runs on the no-file default.
+
+`make install` never writes a config: one machine's apps don't belong on another.
 
 ## Troubleshooting
 
@@ -132,7 +143,7 @@ Change them and `make reload`. To toggle two different apps, swap the bundle IDs
     ```
   - **Log out and back in** if you'd rather just re-read the setting you already have on disk.
   - Or just stay on the default **Ctrl+T**, which macOS never claims — see the [hotkeys record](docs/adr/hotkeys.md).
-- **Fn+N does nothing.** `make logs` should show `registered hotkey N+1 (keycode …)` at start and a `slot N:` line per press. No `slot` line means the key never arrived as an F-key: check the keyboard's mode in a key-event viewer (Fn+1 should be `f1`, keycode 122, no modifiers).
+- **Fn+N does nothing.** `make logs` should show `registered hotkey … fN -> focus(…)` at start and a `slot fN:` line per press. No `registered` line for it means the config does not name that key, or was ignored: the start line says which. No `slot` line means the key never arrived as an F-key: check the keyboard's mode in a key-event viewer (Fn+1 should be `f1`, keycode 122, no modifiers).
 - **Nothing happens at all on Ctrl+T.** Check the log (`make logs`). `RegisterEventHotKey failed` means another app owns the chord; `registered hotkey` with no `toggle:` lines means it's intercepted upstream. Rebind (above) or free the chord.
 - **It toggles but the app doesn't come forward.** Confirm the bundle IDs with `osascript -e 'id of app "Alacritty"'`; an `app not installed: <id>` log line means the bundle ID resolves to nothing.
 - **Loaded but the hotkey and activation silently do nothing.** It was installed as a system LaunchDaemon, which has no WindowServer session; focusd must be a per-user LaunchAgent, which is what `make install` writes.
@@ -142,7 +153,7 @@ Change them and `make reload`. To toggle two different apps, swap the bundle IDs
 
 ```
 .
-├── Sources/focusd/Bindings.swift # the rules: apps, keys, where a press lands
+├── Sources/focusd/Bindings.swift # the rules: the config, keys, where a press lands
 ├── Sources/focusd/main.swift     # Carbon + AppKit plumbing, entry point
 ├── Tests/focusdTests/            # Swift Testing suite (make test)
 ├── Package.swift                 # SwiftPM executable, macOS 14+

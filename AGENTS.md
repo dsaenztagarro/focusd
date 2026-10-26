@@ -35,6 +35,7 @@ focusd is a tiny macOS **global-hotkey daemon**: press Ctrl+T anywhere to toggle
 # run:     make run          # foreground, Ctrl-C to stop (prints the log to the terminal)
 # install: make install      # build + install LaunchAgent + load it
 # logs:    make logs         # tail ~/Library/Logs/local.focusd.log
+# PR:      make pr-install PR=<n>   # run a PR's build as the agent; make install on master restores
 ```
 
 ## Architecture
@@ -42,7 +43,7 @@ focusd is a tiny macOS **global-hotkey daemon**: press Ctrl+T anywhere to toggle
 Two small Swift files: `Bindings.swift` holds the pure rules, and `main.swift` registers a Carbon hotkey, runs an `NSApplication` loop in `.accessory` policy, and on each press activates the target app: the other terminal for Ctrl+T, the slot's app for an F-key. The WindowServer does the key matching and hands the process a single high-level event, so no keyboard-monitoring permission is needed.
 
 Key files:
-- `Sources/focusd/Bindings.swift` — the pure rules: app and key constants, where a press lands.
+- `Sources/focusd/Bindings.swift` — the pure rules: the config and its key names, where a press lands.
 - `Sources/focusd/main.swift` — focusing an app, the Carbon plumbing, the entry point.
 - `Tests/focusdTests/` — the Swift Testing suite, named for the rules.
 - `launchd/local.focusd.plist` — LaunchAgent template (`__BIN__`/`__LOG__` filled by `make install`).
@@ -82,7 +83,7 @@ A test that stubs the very thing it is checking proves the stub, not the app. De
 
 ### Verify the runtime surface
 
-This daemon's behaviour *is* its runtime surface — a green build proves nothing about whether the hotkey fires. Before considering a change done, **drive it and observe**: `make run`, press Ctrl+T (or synthesize it with `osascript -e 'tell application "System Events" to key code 17 using {control down}'`), and confirm a `toggle:` line in the log and the focus actually switching; a slot key (bare `key code 122` for F1) logs a `slot N:` line. Passing compilation is necessary, not sufficient.
+This daemon's behaviour *is* its runtime surface — a green build proves nothing about whether the hotkey fires. Before considering a change done, **drive it and observe**: `make run`, press Ctrl+T (or synthesize it with `osascript -e 'tell application "System Events" to key code 17 using {control down}'`), and confirm a `toggle:` line in the log and the focus actually switching; a slot key the config names (bare `key code 122` for F1) logs a `slot f1:` line. Passing compilation is necessary, not sufficient.
 
 Synthesizing keys needs the Accessibility grant for whatever runs `osascript`; an agent session without it gets `osascript is not allowed to send keystrokes` (1002). Then it checks only that every hotkey logs `registered hotkey …` at start, and hands the key presses to the user as exact steps, never reporting them as passed.
 

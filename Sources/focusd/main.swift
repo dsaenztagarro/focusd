@@ -53,23 +53,20 @@ private func focus(_ target: Target) {
     }
 }
 
-private func toggleFocus() {
-    let frontID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
-    let targetID = toggleTarget(front: frontID)
-    log("toggle: front=\(frontID ?? "nil") -> \(targetID)")
-    focus(.app(targetID))
-}
-
 private func handleHotKey(id: UInt32) {
-    switch action(forHotKeyID: id) {
-    case .toggle:
-        toggleFocus()
-    case .focus(let target):
-        let frontID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
-        log("slot \(id - 1): front=\(frontID ?? "nil") -> \(target)")
-        focus(target)
-    case nil:
+    guard let hotKey = bindings.hotKey(id: id) else {
         log("unknown hotkey id \(id)")
+        return
+    }
+    let frontID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+    switch hotKey.action {
+    case .toggle:
+        let targetID = bindings.toggle.target(front: frontID)
+        log("toggle: front=\(frontID ?? "nil") -> \(targetID)")
+        focus(.app(targetID))
+    case .focus(let target):
+        log("slot \(hotKey.chord): front=\(frontID ?? "nil") -> \(target)")
+        focus(target)
     }
 }
 
@@ -108,24 +105,41 @@ private func installHotKeys() {
         return noErr
     }, 1, &eventType, nil, nil)
 
-    for hotKey in hotKeys {
+    for hotKey in bindings.hotKeys {
         var ref: EventHotKeyRef?
-        let status = RegisterEventHotKey(hotKey.keyCode, hotKey.modifiers,
+        let status = RegisterEventHotKey(hotKey.chord.keyCode, hotKey.chord.modifiers,
                                          EventHotKeyID(signature: hotKeySignature, id: hotKey.id),
                                          GetApplicationEventTarget(), 0, &ref)
         if status == noErr {
             hotKeyRefs.append(ref)
-            log("registered hotkey \(hotKey.id) (keycode \(hotKey.keyCode), mods \(hotKey.modifiers)) -> \(hotKey.action)")
+            log("registered hotkey \(hotKey.id) \(hotKey.chord) -> \(hotKey.action)")
         } else {
             // Most likely another process/system shortcut already owns this chord.
-            log("RegisterEventHotKey failed for hotkey \(hotKey.id) with OSStatus \(status)")
+            log("RegisterEventHotKey failed for hotkey \(hotKey.id) \(hotKey.chord) with OSStatus \(status)")
         }
     }
 }
 
 // MARK: - Entry point
 
-log("focusd starting; Ctrl+T toggles \(appA) <-> \(appB), \(slots.count) slots")
+/// Read once at startup; an edit takes effect on the next start (`make reload`).
+let configURL = FileManager.default.homeDirectoryForCurrentUser
+    .appendingPathComponent(".config/focusd/config.json5")
+
+let (bindings, configOutcome) = startupBindings {
+    FileManager.default.fileExists(atPath: configURL.path) ? try Data(contentsOf: configURL) : nil
+}
+/// The commit `make` built from: tells a `make pr-install` build from the release.
+let build = ProcessInfo.processInfo.environment["FOCUSD_BUILD"] ?? "unknown build"
+
+switch configOutcome {
+case .loaded:
+    log("focusd \(build) starting with \(configURL.path)")
+case .missing:
+    log("focusd \(build) starting; no config at \(configURL.path), using the default toggle")
+case .invalid(let reason):
+    log("focusd \(build) starting; ignoring \(configURL.path): \(reason); using the default toggle")
+}
 installHotKeys()
 
 // A run loop must be pumping for the WindowServer to deliver hotkey events.

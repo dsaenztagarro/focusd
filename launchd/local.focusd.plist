@@ -2,8 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
   LaunchAgent for focusd. `make install` copies this to
-  ~/Library/LaunchAgents/local.focusd.plist, substituting the two __PLACEHOLDER__
-  paths (launchd does not expand ~ or environment variables in these fields).
+  ~/Library/LaunchAgents/local.focusd.plist, substituting the __PLACEHOLDER__
+  values (launchd does not expand ~ or environment variables in its paths).
 
   It is a LaunchAgent (per-user, GUI session) — not a LaunchDaemon — because the
   Carbon hotkey and app activation need the user's WindowServer/Aqua session.
@@ -27,6 +27,14 @@
     <!-- Responds to user input; keep it at interactive scheduling priority. -->
     <key>ProcessType</key>
     <string>Interactive</string>
+
+    <!-- The commit this binary was built from, logged at start: after a
+         `make pr-install` it tells the PR build from the release. -->
+    <key>EnvironmentVariables</key>
+    <dict>
+      <key>FOCUSD_BUILD</key>
+      <string>__BUILD__</string>
+    </dict>
 
     <key>StandardOutPath</key>
     <string>__LOG__</string>
