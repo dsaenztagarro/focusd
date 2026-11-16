@@ -167,7 +167,7 @@ Edit it, then `make reload`. Resolve an app's bundle id with `osascript -e 'id o
 
 ## Credits
 
-Scaffolded on the [agentic-engineering-template](https://github.com/dsaenztagarro/agentic-engineering-template) — the agent instructions and the `template-feedback` / `epic` skills come from there.
+Scaffolded on the [agent-sdlc](https://github.com/dsaenztagarro/agent-sdlc) template — the agent instructions come from there, and its `sdlc` and `design` plugins carry the workflow's skills.
 
 ## License
 
