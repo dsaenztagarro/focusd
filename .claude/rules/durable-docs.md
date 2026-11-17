@@ -15,7 +15,7 @@ paths:
 |---|---|---|
 | **decision record** — [`docs/adr/`](../../docs/adr/README.md) | one theme's live decisions, the forks, the rejected options still worth stating, what was deliberately not built | a census of the code as it stood, a rollout plan, a ticket list, an alternative nobody would reach for again |
 | **security** — [`docs/SECURITY.md`](../../docs/SECURITY.md) | the permission and secrets posture, and its rules | how the code achieves it, beyond naming the mechanism |
-| **design input** — wherever the user points, never `docs/` | an input to an epic, written in the future tense | permanence — `/epic` deletes it at close-out |
+| **design input** — wherever the user points, never `docs/` | an input to an epic, written in the future tense | permanence — it is deleted once what it produced ships |
 
 Split a change across those owners: behaviour → tests, why → its theme record, commands → a README line, a multi-step procedure → a skill.
 

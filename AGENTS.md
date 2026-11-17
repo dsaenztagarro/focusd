@@ -12,7 +12,7 @@ Every task you plan or pick up carries an explicit **complexity** rating and the
 
 ## Improving this workflow (raise the hand)
 
-This project runs on the [agentic-engineering-template](https://github.com/dsaenztagarro/agentic-engineering-template). When you discover a **reusable, project-agnostic** improvement to the workflow itself — a rule that should exist here, a skill step that misfires, a docs-taxonomy gap, a principle worth stating — don't silently apply it only to this repo. **Raise the hand:** run the **`template-feedback`** skill (`.claude/skills/template-feedback/`) to surface a concrete proposal and, on the maintainer's OK, open an issue on the upstream template so every adopter benefits. Keep project-specific rules in this repo; send generalizable ones upstream.
+This project runs on the [agent-sdlc](https://github.com/dsaenztagarro/agent-sdlc) template. A reusable, project-agnostic improvement to the workflow itself goes upstream through `/sdlc:template-feedback`, as one checklist item on the template's open feedback issue; a project-specific rule stays here.
 
 ## Project Overview
 
@@ -95,7 +95,7 @@ Before a change ships, the build must be clean with warnings treated as errors a
 swift build -c release -Xswiftc -warnings-as-errors && make test
 ```
 
-and the runtime surface must be driven (above). The suite states the pure rules in `Sources/focusd/Bindings.swift` (where a press lands); the Carbon and `NSWorkspace` wiring in `main.swift` is proven only by driving it. The `/epic` skill defers to this gate.
+and the runtime surface must be driven (above). The suite states the pure rules in `Sources/focusd/Bindings.swift` (where a press lands); the Carbon and `NSWorkspace` wiring in `main.swift` is proven only by driving it. The `sdlc` plugin's build and review steps defer to this gate.
 
 ## Development Workflow
 
@@ -107,4 +107,4 @@ For any new feature or significant change:
 4. **Record decisions** — a decision that clears the bar in [`docs/adr/README.md`](docs/adr/README.md) amends its theme record, plus one dated line on the theme's `decision-log` issue.
 5. **Open a PR** with `gh pr create`, body ending `Closes #<issue>`; merge with `gh pr merge --squash` once the gate is green.
 
-For larger, multi-ticket work, drive it with the **`/epic`** skill (`.claude/skills/epic/`): one design doc → a GitHub epic → phased sub-issues → shipped, one ticket at a time.
+For larger, multi-ticket work, plan it with the `sdlc` plugin's **`/sdlc:plan`** and build it with **`/sdlc:build-batch`**; the plugins are installed once per machine from the agent-sdlc marketplace, never copied into this repository.
